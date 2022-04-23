@@ -1,0 +1,51 @@
+name: Build and create the VSIX for Avalonia Tags and Identation VSCode Extension
+
+on: 
+  push: 
+    branches: 
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Setup the NPM enviroment to compile the extension
+        uses: actions/setup-node@v3
+        with: 
+          node-version: '16'
+
+      - name: Install all NPM dependencies
+        run: npm install
+
+      - name: Create the release version of the extension
+        uses: lannonbr/vsce-action@3.0.0
+        with: 
+          args: "package"
+        
+      - name: Create artifact
+        uses: actions/upload-artifact@v3
+        with: 
+          name: VSCode extension
+          path: ./avalonia-tagsandidentation-0.0.1.vsix
+
+      - name: Create GitHub release
+        id: create-new-release
+        uses: actions/create-release@v1
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with: 
+          tag_name: ${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with: 
+          upload_url: ${{ steps.create-new-release.outputs.upload_url }}
+          asset_path: ./avalonia-tagsandidentation-0.0.1.vsix
+          asset_name: avalonia-tagsandidentation-v${{ github.run_number }}.vsix
+          asset_content_type: application/zip
